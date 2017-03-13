@@ -14,12 +14,11 @@ import com.shgmn.droidkaigi2017.model.repository.GitHubClient;
 import com.shgmn.droidkaigi2017.view.handler.MainActivityHandler;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity implements MainActivityHandler {
     ActivityMainBinding binding;
@@ -35,16 +34,18 @@ public class MainActivity extends AppCompatActivity implements MainActivityHandl
 
     @Override
     public void onClickButton(View view) {
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
-        executorService.execute(new Runnable() {
-            @Override
-            public void run() {
-                GitHubClient gitHubClient = new GitHubClient();
-                Call<List<Repo>> repo = gitHubClient.fetchRepos("shgmn");
-                repo.enqueue(new Callback<List<Repo>>() {
+        GitHubClient gitHubClient = new GitHubClient();
+        gitHubClient.fetchRepos("shgmn")
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Observer<List<Repo>>() {
                     @Override
-                    public void onResponse(Call<List<Repo>> call, Response<List<Repo>> response) {
-                        List<Repo> repos = response.body();
+                    public void onSubscribe(Disposable d) {
+
+                    }
+
+                    @Override
+                    public void onNext(List<Repo> repos) {
                         if (repos == null) {
                             return;
                         }
@@ -54,12 +55,15 @@ public class MainActivity extends AppCompatActivity implements MainActivityHandl
                     }
 
                     @Override
-                    public void onFailure(Call<List<Repo>> call, Throwable t) {
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
 
                     }
                 });
-            }
-        });
     }
 
     @Override
